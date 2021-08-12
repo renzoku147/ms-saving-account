@@ -1,15 +1,23 @@
 package com.everis.mssavingaccount.service.impl;
 
+import com.everis.mssavingaccount.entity.CreditCard;
+import com.everis.mssavingaccount.entity.Customer;
 import com.everis.mssavingaccount.entity.SavingAccount;
 import com.everis.mssavingaccount.repository.SavingAccountRepository;
 import com.everis.mssavingaccount.service.SavingAccountService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
 public class SavingAccountServiceImpl implements SavingAccountService {
+
+    WebClient webClientCustomer = WebClient.create("http://localhost:8013/customer");
+
+    WebClient webClientCreditCard = WebClient.create("http://localhost:8041/creditcard");
 
     @Autowired
     SavingAccountRepository savingAccountRepository;
@@ -48,4 +56,22 @@ public class SavingAccountServiceImpl implements SavingAccountService {
     public Mono<Long> findCustomerAccountBank(String id) {
         return savingAccountRepository.findByCustomerId(id).count();
     }
+
+    @Override
+    public Mono<Customer> findCustomer(String id) {
+        return webClientCustomer.get().uri("/find/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(Customer.class);
+    }
+
+    @Override
+    public Flux<CreditCard> findCreditCardByCustomer(String id) {
+        return webClientCreditCard.get().uri("/findCreditCards/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToFlux(CreditCard.class);
+    }
+
+
 }

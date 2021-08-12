@@ -20,8 +20,10 @@ public class SavingAccount {
     @Id
     String id;
 
+    @NotNull
     private Customer customer;
 
+    @NotNull
     private String cardNumber;
 
     @NotNull
@@ -30,10 +32,17 @@ public class SavingAccount {
     private List<Person> signers;
 
     @NotNull
-    private Double balance;
+    private Integer limitTransactions;
 
     @NotNull
-    private Integer limitMovements;
+    private Integer freeTransactions;
+
+    @NotNull
+    private Double commissionTransactions;
+
+    private Double balance;
+
+    private Double minAverageVip;
 
     private LocalDateTime date;
 

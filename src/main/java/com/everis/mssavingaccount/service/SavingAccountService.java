@@ -1,5 +1,7 @@
 package com.everis.mssavingaccount.service;
 
+import com.everis.mssavingaccount.entity.CreditCard;
+import com.everis.mssavingaccount.entity.Customer;
 import com.everis.mssavingaccount.entity.SavingAccount;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -17,4 +19,8 @@ public interface SavingAccountService {
     Mono<Boolean> delete(String id);
 
     Mono<Long>  findCustomerAccountBank(String id);
+
+    Mono<Customer>  findCustomer(String id);
+
+    Flux<CreditCard> findCreditCardByCustomer(String t);
 }

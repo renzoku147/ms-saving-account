@@ -1,27 +1,24 @@
 package com.everis.mssavingaccount.controller;
 
-import com.everis.mssavingaccount.entity.Customer;
 import com.everis.mssavingaccount.entity.SavingAccount;
 import com.everis.mssavingaccount.entity.TypeCustomer;
 import com.everis.mssavingaccount.service.SavingAccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.validation.Valid;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/savingAccount")
 @Slf4j
 public class SavingAccountController {
-
-    WebClient webClient = WebClient.create("http://localhost:8013/customer");
 
     @Autowired
     SavingAccountService ctaAhorroService;
@@ -31,49 +28,43 @@ public class SavingAccountController {
         return ctaAhorroService.findAll();
     }
 
-    @GetMapping("/prueba/{id}")
-    public Mono<Customer> list(@PathVariable String id){
-        return webClient.get().uri("/find/{id}", id)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(Customer.class);
-    }
-
     @GetMapping("/find/{id}")
     public Mono<SavingAccount> findById(@PathVariable String id){
         return ctaAhorroService.findById(id);
     }
 
     @PostMapping("/create")
-    public Mono<ResponseEntity<SavingAccount>> create(@RequestBody SavingAccount savingAccount){
-        //PARA CLIENTES PERSONALES
+    public Mono<ResponseEntity<SavingAccount>> create(@Valid @RequestBody SavingAccount savingAccount){
 
-        Mono<Customer> customer = webClient.get().uri("/find/{id}", savingAccount.getCustomer().getId())
-                                    .accept(MediaType.APPLICATION_JSON)
-                                    .retrieve()
-                                    .bodyToMono(Customer.class); // EXISTE EL CLIENTE?
+        return ctaAhorroService.findCustomer(savingAccount.getCustomer().getId())
+            .filter(customer -> customer.getTypeCustomer().getValue().equals(TypeCustomer.EnumTypeCustomer.PERSONAL))
+            .flatMap(customer -> {
+                    return ctaAhorroService.findCustomerAccountBank(savingAccount.getCustomer().getId()) // COUNT CUENTAS AHORRO
+                            .filter(count -> count < 1)
+                            .flatMap(count -> {
+                                switch (customer.getTypeCustomer().getSubType().getValue()) {
+                                    case VIP:   return ctaAhorroService.findCreditCardByCustomer(customer.getId())
+                                                .count()
+                                                .filter(cnt -> cnt > 0
+                                                            & savingAccount.getMinAverageVip() != null & savingAccount.getMinAverageVip() > 0.0
+                                                            & savingAccount.getBalance() != null & savingAccount.getBalance() >= 0.0
+                                                            & savingAccount.getBalance() >= calculateAveregaMin(savingAccount.getMinAverageVip()))
+                                                .flatMap(cnt -> {
+                                                    savingAccount.setCustomer(customer);
+                                                    savingAccount.setDate(LocalDateTime.now());
+                                                    return ctaAhorroService.create(savingAccount);
+                                                });
 
-        return ctaAhorroService.findCustomerAccountBank(savingAccount.getCustomer().getId()) //Mono<Long>
-            .filter(count -> {
-                return count <1;
-            })
-            .flatMap(p -> {
-                return customer; // Long -> Customer
-            }) // Mono<Customer> , Solo si existe
-            .filter(c -> {
-                return c.getTypeCustomer().equals(TypeCustomer.PERSONAL);
-            })
-            .map(c -> {
-                savingAccount.setCustomer(c);
-                savingAccount.setDate(LocalDateTime.now());
-                return savingAccount; // Customer -> SavingAccount
-            })
-            .flatMap(s -> ctaAhorroService.create(s)) // Mono<SavingAccount>
-            .map(savedSavingAccount -> {
-                return new ResponseEntity<>(savedSavingAccount , HttpStatus.CREATED);
+                                    case NORMAL: savingAccount.setCustomer(customer);
+                                                savingAccount.setDate(LocalDateTime.now());
+                                                savingAccount.setBalance(savingAccount.getBalance() != null ? savingAccount.getBalance() : 0.0);
+                                                return ctaAhorroService.create(savingAccount);
+                                    default: return Mono.empty();
+                                }
+                            })
+                            .map(savedSavingAccount -> new ResponseEntity<>(savedSavingAccount , HttpStatus.CREATED));
             })
             .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
-
     }
 
     @PutMapping("/update")
@@ -90,5 +81,10 @@ public class SavingAccountController {
                 .filter(deleteSavingAccount -> deleteSavingAccount)
                 .map(deleteCustomer -> new ResponseEntity<>("Customer Deleted", HttpStatus.ACCEPTED))
                 .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
+    }
+
+    public Double calculateAveregaMin(Double minAverageVip){
+        Integer daysRemaining = LocalDate.now().lengthOfMonth() - LocalDate.now().getDayOfMonth();
+        return minAverageVip*LocalDate.now().getDayOfMonth()/daysRemaining;
     }
 }
