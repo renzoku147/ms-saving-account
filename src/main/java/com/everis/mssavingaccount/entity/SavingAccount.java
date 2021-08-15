@@ -40,6 +40,7 @@ public class SavingAccount {
     @NotNull
     private Double commissionTransactions;
 
+    @NotNull
     private Double balance;
 
     private Double minAverageVip;
