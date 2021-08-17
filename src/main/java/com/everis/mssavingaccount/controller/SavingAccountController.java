@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 import javax.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/savingAccount")
@@ -114,5 +115,17 @@ public class SavingAccountController {
     public Double calculateAveregaMin(Double minAverageVip){
         Integer daysRemaining = LocalDate.now().lengthOfMonth() - LocalDate.now().getDayOfMonth();
         return minAverageVip*LocalDate.now().getDayOfMonth()/daysRemaining;
+    }
+
+    @GetMapping("/findByAccountNumber/{number}")
+    public Mono<SavingAccount> findByAccountNumber(@PathVariable String number){
+        return ctaAhorroService.findByCardNumber(number);
+    }
+
+    @PutMapping("/updateTransference")
+    public Mono<ResponseEntity<SavingAccount>> updateForTransference(@Valid @RequestBody SavingAccount savingAccount) {
+        return ctaAhorroService.create(savingAccount)
+                .filter(customer -> savingAccount.getBalance() >= 0)
+                .map(ft -> new ResponseEntity<>(ft, HttpStatus.CREATED));
     }
 }

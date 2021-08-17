@@ -73,5 +73,10 @@ public class SavingAccountServiceImpl implements SavingAccountService {
                 .bodyToFlux(CreditCard.class);
     }
 
+    @Override
+    public Mono<SavingAccount> findByCardNumber(String number) {
+        return savingAccountRepository.findByCardNumber(number);
+    }
+
 
 }

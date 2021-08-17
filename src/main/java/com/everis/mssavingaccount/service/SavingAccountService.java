@@ -23,4 +23,6 @@ public interface SavingAccountService {
     Mono<Customer>  findCustomer(String id);
 
     Flux<CreditCard> findCreditCardByCustomer(String t);
+
+    Mono<SavingAccount> findByCardNumber(String number);
 }
