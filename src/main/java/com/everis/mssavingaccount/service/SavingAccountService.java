@@ -1,8 +1,12 @@
 package com.everis.mssavingaccount.service;
 
+import java.util.Optional;
+
+import com.everis.mssavingaccount.entity.BankAccount;
 import com.everis.mssavingaccount.entity.CreditCard;
 import com.everis.mssavingaccount.entity.Customer;
 import com.everis.mssavingaccount.entity.SavingAccount;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -13,6 +17,8 @@ public interface SavingAccountService {
     Flux<SavingAccount> findAll();
 
     Mono<SavingAccount> findById(String id);
+    
+    Flux<SavingAccount> findByCustomerId(String idcustomer);
 
     Mono<SavingAccount> update(SavingAccount savingAccount);
 
@@ -24,5 +30,9 @@ public interface SavingAccountService {
 
     Flux<CreditCard> findCreditCardByCustomer(String t);
 
-    Mono<SavingAccount> findByCardNumber(String number);
+    Mono<SavingAccount> findByAccountNumber(String number);
+    
+    public Mono<Optional<BankAccount>> verifyAccountNumber(String numberAccount);
+    
+    Mono<Boolean> verifyExpiredDebt(String idcustomer);
 }

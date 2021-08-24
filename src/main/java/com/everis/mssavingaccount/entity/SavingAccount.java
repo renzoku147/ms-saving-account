@@ -16,7 +16,7 @@ import java.util.List;
 @Document("SavingAccount")
 @AllArgsConstructor
 @NoArgsConstructor
-public class SavingAccount {
+public class SavingAccount implements BankAccount {
     @Id
     String id;
 
@@ -24,9 +24,8 @@ public class SavingAccount {
     private Customer customer;
 
     @NotNull
-    private String cardNumber;
+    private String accountNumber;
 
-    @NotNull
     private List<Person> holders;
 
     private List<Person> signers;
@@ -44,9 +43,9 @@ public class SavingAccount {
     private Double balance;
 
     private Double minAverageVip;
+    
+    private DebitCard debitCard;
 
     private LocalDateTime date;
-
-
 
 }

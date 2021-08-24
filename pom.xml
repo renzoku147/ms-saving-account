@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.java</groupId>
 	<artifactId>ms-saving-account</artifactId>
-	<version>1</version>
+	<version>0.0.1-SNAPSHOT</version>
 	<name>ms-saving-account</name>
 	<packaging>jar</packaging>
 	<description>Microservicio para las cuentas de ahorro</description>

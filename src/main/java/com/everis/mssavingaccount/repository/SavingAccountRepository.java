@@ -8,5 +8,5 @@ import reactor.core.publisher.Mono;
 public interface SavingAccountRepository extends ReactiveMongoRepository<SavingAccount, String> {
     Flux<SavingAccount> findByCustomerId(String id);
 
-    Mono<SavingAccount> findByCardNumber(String number);
+    Mono<SavingAccount> findByAccountNumber(String number);
 }
