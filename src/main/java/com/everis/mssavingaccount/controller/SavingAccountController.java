@@ -40,24 +40,43 @@ public class SavingAccountController {
 
     @PostMapping("/create")
     public Mono<ResponseEntity<SavingAccount>> create(@Valid @RequestBody SavingAccount savingAccount){
-    	
+    	System.out.println(">>> SavingAccount <<<");
     	return ctaAhorroService.findCustomer(savingAccount.getCustomer().getId())
-                .filter(customer -> customer.getTypeCustomer().getValue().equals(TypeCustomer.EnumTypeCustomer.PERSONAL) && savingAccount.getBalance() >= 0)
+                .filter(customer -> {
+                	System.out.println("Encontro al cliente : " + customer.getName());
+                	return customer.getTypeCustomer().getValue().equals(TypeCustomer.EnumTypeCustomer.PERSONAL) && savingAccount.getBalance() >= 0;
+                })
                 .flatMap(customer -> ctaAhorroService.verifyExpiredDebt(savingAccount.getCustomer().getId())
-                					.filter(expired -> expired)
+                					.filter(expired -> {
+                						System.out.println("Filtro deudas vencidas > " + expired);
+                						return expired;
+                					})
                 					.flatMap(expired -> {	
+                						System.out.println("Paso Filtro deudas vencidas > " + expired);
                     	            	return 	ctaAhorroService.verifyAccountNumber(savingAccount.getAccountNumber())
-                    	            			.filter(opt -> !opt.isPresent())
-                    	            			.flatMap(opt -> ctaAhorroService.findCustomerAccountBank(savingAccount.getCustomer().getId()) // COUNT CUENTAS AHORRO
-                    	                                .filter(count -> count < 1)
+                    	            			.filter(opt -> {
+                    	            				System.out.println("Filtro verifyAccountNumber : " + opt.isPresent());
+                    	            				return !opt.isPresent();
+                	            				})
+                    	            			.flatMap(opt -> {
+                    	            			return ctaAhorroService.findCustomerAccountBank(savingAccount.getCustomer().getId()) // COUNT CUENTAS AHORRO
+                    	                                .filter(count -> {
+                    	                                	System.out.println("filtro cantidad de cuentas : " + count);
+                    	                                	return count < 1;
+                    	                                })
                     	                                .flatMap(count -> {
                     	                                    switch (customer.getTypeCustomer().getSubType().getValue()) {
                     	                                        case VIP:   return ctaAhorroService.findCreditCardByCustomer(customer.getId())
                     	                                                    .count()
-                    	                                                    .filter(cnt -> cnt > 0
+                    	                                                    .filter(cnt -> {
+                    	                                                    	System.out.println("Cantidad credito = " + cnt );
+                    	                                                    	System.out.println("Balance = " + savingAccount.getBalance() );
+                    	                                                    	System.out.println("Average = " + calculateAveregaMin(savingAccount.getMinAverageVip()) );
+                    	                                                    	return cnt > 0
                     	                                                                & savingAccount.getMinAverageVip() != null & savingAccount.getMinAverageVip() > 0.0
                     	                                                                & savingAccount.getBalance() != null & savingAccount.getBalance() >= 0.0
-                    	                                                                & savingAccount.getBalance() >= calculateAveregaMin(savingAccount.getMinAverageVip()))
+                    	                                                                & savingAccount.getBalance() >= calculateAveregaMin(savingAccount.getMinAverageVip());
+                	                                                    	})
                     	                                                    .flatMap(cnt -> {
                     	                                                        savingAccount.setCustomer(customer);
                     	                                                        savingAccount.setDate(LocalDateTime.now());
@@ -71,7 +90,8 @@ public class SavingAccountController {
                     	                                        default: return Mono.empty();
                     	                                    }
                     	                                })
-                    	                                .map(savedSavingAccount -> new ResponseEntity<>(savedSavingAccount , HttpStatus.CREATED)));
+                    	                                .map(savedSavingAccount -> new ResponseEntity<>(savedSavingAccount , HttpStatus.CREATED));
+                    	            			});
                                 })
         		)
                 .defaultIfEmpty(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
@@ -97,7 +117,7 @@ public class SavingAccountController {
     }
 
     public Double calculateAveregaMin(Double minAverageVip){
-        Integer daysRemaining = LocalDate.now().lengthOfMonth() - LocalDate.now().getDayOfMonth();
+        Integer daysRemaining = LocalDate.now().lengthOfMonth() - LocalDate.now().getDayOfMonth()+1;
         return minAverageVip*LocalDate.now().getDayOfMonth()/daysRemaining;
     }
 
